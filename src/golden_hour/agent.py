@@ -48,14 +48,20 @@ async def handle_ack(ctx: Context, sender: str, msg: ChatAcknowledgement) -> Non
 @chat.on_message(ChatMessage)
 async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
     await ctx.send(sender, ChatAcknowledgement(timestamp=datetime.now(timezone.utc), acknowledged_msg_id=msg.msg_id))
+    if not coordinator.store.mark_message_processed(msg.msg_id):
+        ctx.logger.info("duplicate chat message ignored: %s", msg.msg_id)
+        return
     user_text = msg.text().strip()
     if not user_text:
         await ctx.send(sender, text_message("Please describe what happened in your own words. You can say unknown or unavailable for missing details."))
         return
     language = detect_language(user_text)
-    case = coordinator.start_case(sender, user_text)
-    case.language = language
-    coordinator.store.save_case(case)
+    # ACP senders may send several turns; resume only their own latest case.
+    case = coordinator.store.latest_case(sender)
+    if case is None:
+        case = coordinator.start_case(sender, user_text)
+        case.language = language
+        coordinator.store.save_case(case)
     opened = {
         "hi": f"\n\nकेस खुल गया है: {case.case_id}। मैं केवल आपके बताए तथ्यों को व्यवस्थित करूँगा।",
         "hinglish": f"\n\nCase open ho gaya hai: {case.case_id}. Main sirf aapke bataye facts organize karunga.",

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import asyncio
 from uuid import uuid4
 from uagents import Agent, Context, Protocol
 from .protocols import BuildResponse, ResponseBundle, WorkerHealth
@@ -10,7 +11,13 @@ SEED = os.getenv("RESPONSE_AGENT_SEED_PHRASE")
 if not SEED and __name__ == "__main__":
     raise RuntimeError("RESPONSE_AGENT_SEED_PHRASE must be set before starting the Response Agent")
 
-agent = Agent(name=os.getenv("RESPONSE_AGENT_NAME", "golden-hour-response"), seed=SEED, port=int(os.getenv("RESPONSE_AGENT_PORT", "8002")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Builds source-linked financial-fraud reporting drafts from validated facts.")
+def _agent_loop():
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.new_event_loop()
+
+agent = Agent(name=os.getenv("RESPONSE_AGENT_NAME", "golden-hour-response"), seed=SEED, port=int(os.getenv("RESPONSE_AGENT_PORT", "8002")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Builds source-linked financial-fraud reporting drafts from validated facts.", loop=_agent_loop())
 protocol = Protocol(name="GoldenHourResponse", version="1.0")
 
 def build(msg: BuildResponse) -> ResponseBundle:

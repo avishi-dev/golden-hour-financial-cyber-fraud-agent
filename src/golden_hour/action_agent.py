@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import asyncio
 from uuid import uuid4
 from uagents import Agent, Context, Protocol
 from .protocols import ActionExecutionResult, ExecuteApprovedAction, WorkerHealth
@@ -10,7 +11,13 @@ SEED = os.getenv("ACTION_AGENT_SEED_PHRASE")
 if not SEED and __name__ == "__main__":
     raise RuntimeError("ACTION_AGENT_SEED_PHRASE must be set before starting the Action Executor")
 
-agent = Agent(name=os.getenv("ACTION_AGENT_NAME", "golden-hour-action"), seed=SEED, port=int(os.getenv("ACTION_AGENT_PORT", "8003")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Executes only explicitly approved, trusted-recipient Golden Hour demo actions.")
+def _agent_loop():
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.new_event_loop()
+
+agent = Agent(name=os.getenv("ACTION_AGENT_NAME", "golden-hour-action"), seed=SEED, port=int(os.getenv("ACTION_AGENT_PORT", "8003")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Executes only explicitly approved, trusted-recipient Golden Hour demo actions.", loop=_agent_loop())
 protocol = Protocol(name="GoldenHourAction", version="1.0")
 
 def execute(msg: ExecuteApprovedAction) -> ActionExecutionResult:

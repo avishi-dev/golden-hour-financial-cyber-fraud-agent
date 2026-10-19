@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import asyncio
 from uagents import Agent, Context, Protocol
 from .protocols import AnalyzeEvidence, EvidenceResult, WorkerHealth
 
@@ -11,7 +12,13 @@ if not SEED:
     if __name__ == "__main__":
         raise RuntimeError("EVIDENCE_AGENT_SEED_PHRASE must be set before starting the Evidence Agent")
 
-agent = Agent(name=os.getenv("EVIDENCE_AGENT_NAME", "golden-hour-evidence"), seed=SEED, port=int(os.getenv("EVIDENCE_AGENT_PORT", "8001")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Untrusted financial-fraud evidence extraction and discrepancy detection.")
+def _agent_loop():
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.new_event_loop()
+
+agent = Agent(name=os.getenv("EVIDENCE_AGENT_NAME", "golden-hour-evidence"), seed=SEED, port=int(os.getenv("EVIDENCE_AGENT_PORT", "8001")), mailbox=os.getenv("AGENT_MAILBOX", "false").lower() == "true", publish_agent_details=True, description="Untrusted financial-fraud evidence extraction and discrepancy detection.", loop=_agent_loop())
 protocol = Protocol(name="GoldenHourEvidence", version="1.0")
 
 def analyze(msg: AnalyzeEvidence) -> EvidenceResult:

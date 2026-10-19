@@ -80,6 +80,19 @@ class DispatchJob(BaseModel):
     provider_ref: str | None = None
     error: str | None = None
 
+class Reminder(BaseModel):
+    """A persisted request, not a claim that a notification was delivered."""
+    model_config = ConfigDict(extra="forbid")
+    reminder_id: UUID = Field(default_factory=uuid4)
+    case_id: UUID
+    task: str
+    scheduled_for: datetime
+    timezone: str
+    channel: str
+    state: str = "pending"
+    scheduler_ref: str | None = None
+    error: str | None = None
+
 class AnalyzeEvidenceRequest(BaseModel):
     schema_version: str = "1.0"
     message_id: UUID = Field(default_factory=uuid4)
