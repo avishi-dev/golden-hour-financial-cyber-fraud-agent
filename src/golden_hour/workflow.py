@@ -5,8 +5,9 @@ from datetime import timedelta
 from .asi1 import ASI1Client, TOOLS
 from .models import Approval, Case, CaseState, DispatchJob, Transaction, utcnow
 from .store import Store
+from .localization import urgent_guidance
 
-URGENT = "If money may have moved recently: contact your bank through its verified official channel and use India's official financial-fraud reporting route (1930/NCRP). Do not share OTPs, PINs, CVV, passwords, or install/execute an APK. I can help prepare facts; I cannot freeze funds or guarantee recovery."
+URGENT = urgent_guidance("en")
 
 class Coordinator:
     def __init__(self, store: Store, asi1: ASI1Client | None = None) -> None:
