@@ -2,7 +2,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from uuid import UUID
-from .models import Approval, Case, DispatchJob, Reminder
+from .models import Approval, Case, DispatchJob, Reminder, utcnow
 
 class Store:
     """Durable MVP store. JSON records are owner-scoped; no arbitrary SQL is exposed."""
@@ -49,6 +49,11 @@ class Store:
     def get_reminder(self, reminder_id: UUID) -> Reminder | None:
         row = self._get("reminders", str(reminder_id))
         return Reminder.model_validate_json(row[1]) if row else None
+    def due_reminders(self) -> list[Reminder]:
+        with sqlite3.connect(self.path) as db:
+            rows = db.execute("SELECT record FROM reminders").fetchall()
+        now = utcnow()
+        return [reminder for (record,) in rows if (reminder := Reminder.model_validate_json(record)).state == "scheduled" and reminder.scheduled_for <= now]
     def mark_message_processed(self, message_id: UUID) -> bool:
         with sqlite3.connect(self.path) as db:
             try:
