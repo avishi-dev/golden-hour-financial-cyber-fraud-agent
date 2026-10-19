@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from .store import Store
 from .workflow import Coordinator, URGENT
 from .localization import detect_language, urgent_guidance
+from .worker_transport import WorkerUnavailable, evidence_request, response_request
 
 load_dotenv()
 
@@ -70,6 +71,16 @@ async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
     await ctx.send(sender, text_message(urgent_guidance(language) + opened))
     try:
         updated = await coordinator.intake(case, user_text)
+        # Deployment uses independently addressed workers. Missing worker configuration
+        # remains an honest pending state rather than a fabricated collaboration claim.
+        try:
+            coordinator.add_text_evidence(updated, user_text, "chat-turn.txt")
+            result = await evidence_request(ctx, updated)
+            updated = coordinator.apply_evidence_result(updated, result)
+            bundle = await response_request(ctx, updated)
+            await ctx.send(sender, text_message(f"Draft bundle prepared for case version {bundle.case_version}. {bundle.call_brief}"))
+        except WorkerUnavailable as exc:
+            ctx.logger.info("worker workflow pending: %s", exc)
         status = {
             "hi": f"केस {updated.case_id} अभी {updated.state.value} स्थिति में है। वर्ज़न {updated.version}। किसी भी कार्रवाई से पहले निकाली गई जानकारी की समीक्षा करें।",
             "hinglish": f"Case {updated.case_id} abhi {updated.state.value} state mein hai. Version {updated.version}. Kisi bhi action se pehle extracted details review karein.",

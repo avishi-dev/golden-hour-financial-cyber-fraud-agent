@@ -38,6 +38,8 @@ class EvidenceItem(BaseModel):
     mime_type: str
     extracted_text: str = ""
     untrusted: bool = True
+    size_bytes: int = 0
+    uploaded_at: datetime = Field(default_factory=utcnow)
 
 class Case(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -54,6 +56,7 @@ class Case(BaseModel):
     evidence: list[EvidenceItem] = Field(default_factory=list)
     contradictions: list[str] = Field(default_factory=list)
     injection_flags: list[str] = Field(default_factory=list)
+    audit_events: list[dict[str, Any]] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 
@@ -92,6 +95,26 @@ class Reminder(BaseModel):
     state: str = "pending"
     scheduler_ref: str | None = None
     error: str | None = None
+
+class RuleEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    rule_id: str
+    version: str
+    title: str
+    source_url: str
+    action_text: str
+    status: str = "source_verified"
+    effective_from: datetime | None = None
+    required_facts: list[str] = Field(default_factory=list)
+
+class ActionTask(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    task_id: UUID = Field(default_factory=uuid4)
+    route: str
+    title: str
+    rule_id: str | None = None
+    state: str = "outstanding"
+    prerequisite: str | None = None
 
 class AnalyzeEvidenceRequest(BaseModel):
     schema_version: str = "1.0"

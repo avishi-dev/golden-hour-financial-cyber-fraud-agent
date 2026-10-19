@@ -1,0 +1,4 @@
+[
+  {"rule_id":"mha-1930-immediate-reporting","version":"2026-07-22","title":"Immediate financial-fraud reporting","source_url":"https://www.pib.gov.in/PressReleasePage.aspx?PRID=2287674&lang=1&reg=1","action_text":"Use the official financial-fraud reporting route (1930/NCRP) promptly when money may have moved. This prepares a report; it does not establish freezing, recovery, or an FIR.","status":"source_verified","required_facts":[]},
+  {"rule_id":"rbi-prompt-bank-notification","version":"2024-02-26","title":"Prompt bank notification","source_url":"https://www.rbi.org.in/commonperson/images/FAME202426022024.pdf","action_text":"Notify the affected bank using a verified official channel. Confirm the bank's current process directly; this application does not determine liability or response deadlines.","status":"source_verified","required_facts":[]}
+]
