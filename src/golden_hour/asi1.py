@@ -3,6 +3,9 @@ import json
 import os
 from typing import Any
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 TOOLS = [{"type":"function","function":{"name":"record_intake_facts","description":"Extract only facts stated by the user. Never infer authorization, authenticity, liability, deadlines, or recipient addresses.","strict":True,"parameters":{"type":"object","properties":{"amount_minor":{"type":["integer","null"]},"currency":{"type":["string","null"]},"payment_method":{"type":["string","null"]},"transaction_reference":{"type":["string","null"]},"ongoing_demands":{"type":["boolean","null"]},"suspected_pattern":{"type":["string","null"]}},"required":["amount_minor","currency","payment_method","transaction_reference","ongoing_demands","suspected_pattern"],"additionalProperties":False}}}]
 

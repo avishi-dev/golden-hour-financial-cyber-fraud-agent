@@ -8,9 +8,12 @@ from uuid import uuid4
 
 from uagents import Agent, Context, Protocol
 from uagents_core.contrib.protocols.chat import ChatAcknowledgement, ChatMessage, TextContent, chat_protocol_spec
+from dotenv import load_dotenv
 
 from .store import Store
 from .workflow import Coordinator, URGENT
+
+load_dotenv()
 
 NAME = os.getenv("AGENT_NAME", "golden-hour-coordinator")
 SEED = os.getenv("AGENT_SEED_PHRASE")

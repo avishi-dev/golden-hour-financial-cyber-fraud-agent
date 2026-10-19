@@ -39,6 +39,26 @@ class ResponseBundle(Model):
     ncrp_narrative: str
     missing_facts: list[str] = []
 
+class ExecuteApprovedAction(Model):
+    schema_version: str = "1.0"
+    correlation_id: UUID | None = None
+    case_id: UUID
+    case_version: int
+    approval_id: UUID
+    payload_digest: str
+    recipient: str
+    subject: str
+    body: str
+    idempotency_key: str
+
+class ActionExecutionResult(Model):
+    schema_version: str = "1.0"
+    correlation_id: UUID
+    approval_id: UUID
+    state: str
+    provider_ref: str | None = None
+    detail: str = ""
+
 class WorkerHealth(Model):
     schema_version: str = "1.0"
     worker: str
