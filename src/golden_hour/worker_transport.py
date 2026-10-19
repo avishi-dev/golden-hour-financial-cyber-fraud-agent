@@ -6,7 +6,7 @@ import os
 from uagents import Context
 
 from .models import Case
-from .protocols import AnalyzeEvidence, BuildResponse, EvidenceResult, ResponseBundle
+from .protocols import ActionExecutionResult, AnalyzeEvidence, BuildResponse, EvidenceResult, ExecuteApprovedAction, ResponseBundle
 
 
 class WorkerUnavailable(RuntimeError):
@@ -39,4 +39,14 @@ async def response_request(ctx: Context, case: Case) -> ResponseBundle:
     result, status = await ctx.send_and_receive(destination, request, ResponseBundle, timeout=20)
     if not isinstance(result, ResponseBundle) or result.correlation_id != request.correlation_id or result.case_version != case.version:
         raise WorkerUnavailable(f"Response worker did not return a valid current result: {status}")
+    return result
+
+
+async def action_request(ctx: Context, request: ExecuteApprovedAction) -> ActionExecutionResult:
+    destination = os.getenv("ACTION_AGENT_ADDRESS")
+    if not destination:
+        raise WorkerUnavailable("ACTION_AGENT_ADDRESS is not configured")
+    result, status = await ctx.send_and_receive(destination, request, ActionExecutionResult, timeout=30)
+    if not isinstance(result, ActionExecutionResult) or result.approval_id != request.approval_id:
+        raise WorkerUnavailable(f"Action worker did not return a valid result: {status}")
     return result

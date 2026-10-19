@@ -13,7 +13,9 @@ from dotenv import load_dotenv
 from .store import Store
 from .workflow import Coordinator, URGENT
 from .localization import detect_language, urgent_guidance
-from .worker_transport import WorkerUnavailable, evidence_request, response_request
+from .worker_transport import WorkerUnavailable, action_request, evidence_request, response_request
+from .interactions import approval_id_from_text, review_text
+from .protocols import ExecuteApprovedAction
 
 load_dotenv()
 
@@ -59,6 +61,19 @@ async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
     language = detect_language(user_text)
     # ACP senders may send several turns; resume only their own latest case.
     case = coordinator.store.latest_case(sender)
+    approval_id = approval_id_from_text(user_text)
+    if approval_id is not None:
+        if case is None:
+            await ctx.send(sender, text_message("No active case is available for that approval."))
+            return
+        try:
+            approval = coordinator.approve_email(approval_id, sender, case)
+            request = ExecuteApprovedAction(case_id=case.case_id, case_version=case.version, approval_id=approval.approval_id, payload_digest=approval.payload_digest, recipient=approval.recipient, subject=approval.subject, body=approval.body, idempotency_key=f"{approval.approval_id}:{approval.payload_digest}")
+            result = await action_request(ctx, request)
+            await ctx.send(sender, text_message(f"Action status: {result.state}. {result.detail}"))
+        except (ValueError, WorkerUnavailable) as exc:
+            await ctx.send(sender, text_message(f"The action was not sent: {exc}"))
+        return
     if case is None:
         case = coordinator.start_case(sender, user_text)
         case.language = language
@@ -78,7 +93,12 @@ async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
             result = await evidence_request(ctx, updated)
             updated = coordinator.apply_evidence_result(updated, result)
             bundle = await response_request(ctx, updated)
+            coordinator.accept_response_bundle(updated, bundle)
             await ctx.send(sender, text_message(f"Draft bundle prepared for case version {bundle.case_version}. {bundle.call_brief}"))
+            recipient = os.getenv("DEMO_RECIPIENT_EMAIL")
+            if recipient and not bundle.missing_facts:
+                approval = coordinator.create_approval(updated, recipient, bundle.bank_email_subject, bundle.bank_email_body)
+                await ctx.send(sender, text_message(review_text(approval)))
         except WorkerUnavailable as exc:
             ctx.logger.info("worker workflow pending: %s", exc)
         status = {

@@ -98,6 +98,13 @@ class Coordinator:
         self._audit(case, "response_bundle_built")
         self.store.save_case(case)
         return bundle
+    def accept_response_bundle(self, case: Case, bundle):
+        if bundle.case_id != case.case_id or bundle.case_version != case.version:
+            raise ValueError("Response bundle is stale or belongs to another case")
+        case.state = CaseState.NEEDS_REVIEW
+        self._audit(case, "remote_response_bundle_built")
+        self.store.save_case(case)
+        return bundle
     def action_plan(self, case: Case):
         return Rulebook().tasks_for(case)
     def export_pdf(self, case: Case, directory: str | Path = "exports") -> tuple[Path, Path]:
