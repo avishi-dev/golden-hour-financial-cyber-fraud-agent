@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+import socket
 from email.message import EmailMessage
 from uuid import uuid4
 
@@ -41,7 +42,10 @@ def send_demo_email(*, recipient: str, subject: str, body: str, idempotency_key:
 
 def record_send_result(job: DispatchJob, result: tuple[str, str] | None = None, error: Exception | None = None) -> DispatchJob:
     if error is not None:
-        job.state, job.error = "failed", str(error)
+        # A connection timeout can happen after a provider accepted the message.
+        # Preserve uncertainty and never blind-retry that idempotency key.
+        job.state = "status_unknown" if isinstance(error, (TimeoutError, socket.timeout, smtplib.SMTPServerDisconnected)) else "failed"
+        job.error = str(error)
     elif result is not None:
         job.state, job.provider_ref = result
     return job

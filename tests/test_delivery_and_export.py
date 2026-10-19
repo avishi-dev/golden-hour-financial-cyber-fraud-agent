@@ -6,6 +6,8 @@ import pytest
 from golden_hour.models import CaseState, Transaction, utcnow
 from golden_hour.store import Store
 from golden_hour.workflow import Coordinator
+from golden_hour.email_provider import record_send_result
+from golden_hour.models import DispatchJob
 
 
 def test_export_writes_versioned_pdf_and_external_manifest(tmp_path: Path):
@@ -43,3 +45,8 @@ def test_reminder_needs_configured_channel_and_can_be_cancelled(monkeypatch, tmp
     reminder = coordinator.create_reminder(case, "Follow up", utcnow() + timedelta(hours=1), "Asia/Kolkata", "email")
     assert reminder.scheduler_ref
     assert coordinator.cancel_reminder(reminder.reminder_id, case).state == "cancelled"
+
+
+def test_ambiguous_provider_timeout_is_not_labelled_a_failure():
+    job = DispatchJob(idempotency_key="once", approval_id=__import__("uuid").uuid4())
+    assert record_send_result(job, error=TimeoutError("timed out")).state == "status_unknown"
