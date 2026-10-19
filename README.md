@@ -66,6 +66,28 @@ AGENT_SEED_PHRASE='local-only-secret' .venv/bin/python -m golden_hour.agent
 
 Use `AGENT_MAILBOX=true` for the mailbox deployment path documented by Fetch. Do not copy a local-only endpoint into Agentverse; registration requires a reachable HTTPS endpoint.
 
+## Implemented local vertical slice
+
+The repository now supports the safe, local portion of the demo flow:
+
+1. ACP acknowledges a message, de-duplicates its message ID, and resumes the sender's own latest case rather than creating a new case per turn.
+2. The coordinator stores untrusted pasted evidence, runs the Evidence Agent's discrepancy/injection checks, and builds the Response Agent's three drafts from structured facts.
+3. The coordinator exports a versioned PDF and a separate JSON manifest containing the PDF and evidence hashes. The document is labelled unofficial; hashes only identify recorded bytes.
+4. A review-bound approval is checked for owner, exact case version, expiry, trusted recipient, and idempotency before an SMTP test send is attempted. `provider_accepted` means SMTP accepted the message, not that it was delivered or acknowledged.
+5. A configured email reminder request is persisted and can be cancelled. This MVP stores the reminder record; production scheduling/delivery requires a deployed scheduler adapter.
+
+To permit an actual test send, set `DEMO_SENDING_ENABLED=true` and configure the SMTP variables in `.env`. The recipient is always exactly `DEMO_RECIPIENT_EMAIL`; evidence and model output cannot choose an address. Leave sending disabled for all ordinary development and presentations without a test inbox.
+
+Run the verified test suite in a configured environment:
+
+```bash
+pytest -q
+```
+
+## Remaining deployment gates
+
+The source code cannot register an Agentverse profile, obtain ASI:One credentials, make a public endpoint, configure a test mailbox, or create an ASI:One shared chat on its own. Before submission, complete those account/deployment steps and test the real ACP conversation, worker addresses, test inbox receipt, reminder delivery adapter, and the three card schemas against the current Fetch examples. Do not mark those items complete until their external evidence exists.
+
 ## References
 - ASI:One tool calling: https://docs.asi1.ai/documentation/build-with-asi-one/tool-calling
 - ASI:One quickstart: https://docs.asi1.ai/documentation/getting-started/quickstart
