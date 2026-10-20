@@ -1,4 +1,4 @@
-# Golden Hour — Financial Fraud First Response
+# Golden Hour- Financial Fraud First Response
 
 Golden Hour coordinates a financial-cyberfraud first-response workflow through ASI:One and Fetch.ai uAgents. It turns an incomplete report into reviewed facts, discrepancy questions, a source-linked action bundle, an approval-bound test email, and a persisted follow-up state.
 
